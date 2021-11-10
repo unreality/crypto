@@ -3,6 +3,7 @@ package x509util
 import (
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/asn1"
 	"encoding/json"
 
 	"github.com/pkg/errors"
@@ -14,13 +15,26 @@ type Name struct {
 	Country            MultiString `json:"country,omitempty"`
 	Organization       MultiString `json:"organization,omitempty"`
 	OrganizationalUnit MultiString `json:"organizationalUnit,omitempty"`
+	DomainController   MultiString `json:"domainController,omitempty"`
 	Locality           MultiString `json:"locality,omitempty"`
 	Province           MultiString `json:"province,omitempty"`
 	StreetAddress      MultiString `json:"streetAddress,omitempty"`
 	PostalCode         MultiString `json:"postalCode,omitempty"`
 	SerialNumber       string      `json:"serialNumber,omitempty"`
 	CommonName         string      `json:"commonName,omitempty"`
+	Surname            string      `json:"surname,omitempty"`
+	GivenName          string      `json:"givenName,omitempty"`
+	Title              string      `json:"title,omitempty"`
+	UID                string      `json:"userID,omitempty"`
 }
+
+var (
+	oidGivenName = []int{2, 5, 4, 42}
+	oidSurname   = []int{2, 5, 4, 4}
+	oidTitle     = []int{2, 5, 4, 12}
+	oidUID       = []int{0, 9, 2342, 19200300, 100, 1, 1}
+	oidDC        = []int{0, 9, 2342, 19200300, 100, 1, 25}
+)
 
 // UnmarshalJSON implements the json.Unmarshal interface and unmarshals a JSON
 // object in the Name struct or a string as just the subject common name.
@@ -80,6 +94,57 @@ func (s Subject) Set(c *x509.Certificate) {
 		SerialNumber:       s.SerialNumber,
 		CommonName:         s.CommonName,
 	}
+
+	for _, dc := range s.DomainController {
+		c.Subject.ExtraNames = append(c.Subject.ExtraNames, pkix.AttributeTypeAndValue{
+			Type: oidDC,
+			Value: asn1.RawValue{
+				Tag:   asn1.TagIA5String,
+				Bytes: []byte(dc),
+			},
+		})
+	}
+
+	if s.Title != "" {
+		c.Subject.ExtraNames = append(c.Subject.ExtraNames, pkix.AttributeTypeAndValue{
+			Type: oidTitle,
+			Value: asn1.RawValue{
+				Tag:   asn1.TagIA5String,
+				Bytes: []byte(s.Title),
+			},
+		})
+	}
+
+	if s.GivenName != "" {
+		c.Subject.ExtraNames = append(c.Subject.ExtraNames, pkix.AttributeTypeAndValue{
+			Type: oidGivenName,
+			Value: asn1.RawValue{
+				Tag:   asn1.TagIA5String,
+				Bytes: []byte(s.GivenName),
+			},
+		})
+	}
+
+	if s.Surname != "" {
+		c.Subject.ExtraNames = append(c.Subject.ExtraNames, pkix.AttributeTypeAndValue{
+			Type: oidSurname,
+			Value: asn1.RawValue{
+				Tag:   asn1.TagIA5String,
+				Bytes: []byte(s.Surname),
+			},
+		})
+	}
+
+	if s.UID != "" {
+		c.Subject.ExtraNames = append(c.Subject.ExtraNames, pkix.AttributeTypeAndValue{
+			Type: oidUID,
+			Value: asn1.RawValue{
+				Tag:   asn1.TagIA5String,
+				Bytes: []byte(s.UID),
+			},
+		})
+	}
+
 }
 
 // Issuer is the JSON representation of the X.509 issuer field.
