@@ -29,11 +29,20 @@ type Name struct {
 }
 
 var (
-	oidGivenName = []int{2, 5, 4, 42}
-	oidSurname   = []int{2, 5, 4, 4}
-	oidTitle     = []int{2, 5, 4, 12}
-	oidUID       = []int{0, 9, 2342, 19200300, 100, 1, 1}
-	oidDC        = []int{0, 9, 2342, 19200300, 100, 1, 25}
+	oidUID                = []int{0, 9, 2342, 19200300, 100, 1, 1}
+	oidDC                 = []int{0, 9, 2342, 19200300, 100, 1, 25}
+	oidCommonName         = []int{2, 5, 4, 3}
+	oidSurname            = []int{2, 5, 4, 4}
+	oidSerialNumber       = []int{2, 5, 4, 5}
+	oidCountry            = []int{2, 5, 4, 6}
+	oidLocality           = []int{2, 5, 4, 7}
+	oidProvince           = []int{2, 5, 4, 8}
+	oidStreetAddress      = []int{2, 5, 4, 9}
+	oidOrganization       = []int{2, 5, 4, 10}
+	oidOrganizationalUnit = []int{2, 5, 4, 11}
+	oidTitle              = []int{2, 5, 4, 12}
+	oidPostalCode         = []int{2, 5, 4, 17}
+	oidGivenName          = []int{2, 5, 4, 42}
 )
 
 // UnmarshalJSON implements the json.Unmarshal interface and unmarshals a JSON
@@ -83,16 +92,78 @@ func (s *Subject) UnmarshalJSON(data []byte) error {
 
 // Set sets the subject in the given certificate.
 func (s Subject) Set(c *x509.Certificate) {
-	c.Subject = pkix.Name{
-		Country:            s.Country,
-		Organization:       s.Organization,
-		OrganizationalUnit: s.OrganizationalUnit,
-		Locality:           s.Locality,
-		Province:           s.Province,
-		StreetAddress:      s.StreetAddress,
-		PostalCode:         s.PostalCode,
-		SerialNumber:       s.SerialNumber,
-		CommonName:         s.CommonName,
+	//c.Subject = pkix.Name{
+	//	Country:            s.Country,
+	//	Organization:       s.Organization,
+	//	OrganizationalUnit: s.OrganizationalUnit,
+	//	Locality:           s.Locality,
+	//	Province:           s.Province,
+	//	StreetAddress:      s.StreetAddress,
+	//	PostalCode:         s.PostalCode,
+	//	SerialNumber:       s.SerialNumber,
+	//	CommonName:         s.CommonName,
+	//}
+
+	c.Subject = pkix.Name{}
+
+	for _, country := range s.Country {
+		c.Subject.ExtraNames = append(c.Subject.ExtraNames, pkix.AttributeTypeAndValue{
+			Type: oidCountry,
+			Value: asn1.RawValue{
+				Tag:   asn1.TagIA5String,
+				Bytes: []byte(country),
+			},
+		})
+	}
+
+	for _, locality := range s.Locality {
+		c.Subject.ExtraNames = append(c.Subject.ExtraNames, pkix.AttributeTypeAndValue{
+			Type: oidLocality,
+			Value: asn1.RawValue{
+				Tag:   asn1.TagIA5String,
+				Bytes: []byte(locality),
+			},
+		})
+	}
+
+	for _, province := range s.Province {
+		c.Subject.ExtraNames = append(c.Subject.ExtraNames, pkix.AttributeTypeAndValue{
+			Type: oidProvince,
+			Value: asn1.RawValue{
+				Tag:   asn1.TagIA5String,
+				Bytes: []byte(province),
+			},
+		})
+	}
+
+	for _, streetAddress := range s.StreetAddress {
+		c.Subject.ExtraNames = append(c.Subject.ExtraNames, pkix.AttributeTypeAndValue{
+			Type: oidStreetAddress,
+			Value: asn1.RawValue{
+				Tag:   asn1.TagIA5String,
+				Bytes: []byte(streetAddress),
+			},
+		})
+	}
+
+	for _, postalCode := range s.PostalCode {
+		c.Subject.ExtraNames = append(c.Subject.ExtraNames, pkix.AttributeTypeAndValue{
+			Type: oidPostalCode,
+			Value: asn1.RawValue{
+				Tag:   asn1.TagIA5String,
+				Bytes: []byte(postalCode),
+			},
+		})
+	}
+
+	for _, org := range s.Organization {
+		c.Subject.ExtraNames = append(c.Subject.ExtraNames, pkix.AttributeTypeAndValue{
+			Type: oidOrganization,
+			Value: asn1.RawValue{
+				Tag:   asn1.TagIA5String,
+				Bytes: []byte(org),
+			},
+		})
 	}
 
 	for _, dc := range s.DomainController {
@@ -101,6 +172,16 @@ func (s Subject) Set(c *x509.Certificate) {
 			Value: asn1.RawValue{
 				Tag:   asn1.TagIA5String,
 				Bytes: []byte(dc),
+			},
+		})
+	}
+
+	for _, orgUnit := range s.OrganizationalUnit {
+		c.Subject.ExtraNames = append(c.Subject.ExtraNames, pkix.AttributeTypeAndValue{
+			Type: oidOrganizationalUnit,
+			Value: asn1.RawValue{
+				Tag:   asn1.TagIA5String,
+				Bytes: []byte(orgUnit),
 			},
 		})
 	}
@@ -131,6 +212,26 @@ func (s Subject) Set(c *x509.Certificate) {
 			Value: asn1.RawValue{
 				Tag:   asn1.TagIA5String,
 				Bytes: []byte(s.Surname),
+			},
+		})
+	}
+
+	if s.CommonName != "" {
+		c.Subject.ExtraNames = append(c.Subject.ExtraNames, pkix.AttributeTypeAndValue{
+			Type: oidCommonName,
+			Value: asn1.RawValue{
+				Tag:   asn1.TagIA5String,
+				Bytes: []byte(s.CommonName),
+			},
+		})
+	}
+
+	if s.SerialNumber != "" {
+		c.Subject.ExtraNames = append(c.Subject.ExtraNames, pkix.AttributeTypeAndValue{
+			Type: oidSerialNumber,
+			Value: asn1.RawValue{
+				Tag:   asn1.TagIA5String,
+				Bytes: []byte(s.SerialNumber),
 			},
 		})
 	}
